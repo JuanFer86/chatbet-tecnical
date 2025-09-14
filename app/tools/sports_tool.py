@@ -3,15 +3,18 @@ import httpx
 from app.core.config import settings
 
 
-@tool(description="Get a list of available sports in the gaming house")
-async def get_available_sports() -> str:
+@tool
+def get_available_sports() -> str:
     """
-    Fetches a list of available sports from an external API.
+    Fetches a list of available sports
+    Args:
+        None
+    Returns:
+        str: A JSON string containing the list of available sports or an error message.
     """
     try:
-        print("Fetching available sports...")
-        async with httpx.Client() as client:
-            response = await client.get(f"{settings.BASE_URL}/sports")
+        with httpx.Client() as client:
+            response = client.get(f"{settings.BASE_URL}/sports")
 
             if response.status_code == 200:
                 return response.text

@@ -1,35 +1,46 @@
-from fastapi import APIRouter, Response, Depends
+from fastapi import APIRouter, Response, Request, Header
 from app.models.chat_models import ChatRequest, ChatResponse
 from app.services.agent_service import generate_response
-from app.services.auth_service import verify_token
 
 router = APIRouter()
 
-# Historial de conversación en memoria
+# memorized conversation
 conversation = []
 
 
 @router.get("/", response_model=ChatResponse)
 async def chat_welcome_endpoint():
     """
-    return a welcome message just for the first GET request
+    return a welcome message just for the first GET request and get sports and tournaments
     """
 
-    return {"response": "Hi👋, Please Authenticate with userKey before I can help you"}
+    return {"response": "Hi👋, How can I help you in your betting today?"}
 
 
 @router.post("/", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest, user=Depends(verify_token)):
+async def chat_endpoint(
+    chat_request: ChatRequest,
+    Authorization: str | None = Header(default=None),
+    x_user_id: str | None = Header(default=None),
+    x_user_key: str | None = Header(default=None),
+):
     """
     Endpoint to handle chat messages.
     """
     try:
-        if not user:
-            return Response(status_code=403, content="Invalid or missing token")
+        # if not user:
+        #     return Response(status_code=403, content="Invalid or missing token")
+
+        if Authorization and x_user_id and x_user_key:
+            user = {
+                "token": Authorization.replace("Bearer", "").strip(),
+                "user_id": x_user_id,
+                "user_key": x_user_key,
+            }
 
         global conversation
-        conversation.append({"role": "user", "parts": [request.text]})
-        reply = generate_response(request.text)
+        conversation.append({"role": "user", "parts": [chat_request.text]})
+        reply = generate_response(chat_request.text, conversation, user)
         conversation.append({"role": "model", "parts": [reply]})
         return {"response": reply}
 

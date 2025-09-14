@@ -13,6 +13,6 @@ async def auth_endpoint(request: AuthenticateRequest):
 
     try:
         reply = await authenticate_user(request.userkey)
-        return {"token": reply}
+        return reply
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

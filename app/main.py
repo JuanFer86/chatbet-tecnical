@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from app.routers import auth, chat
-from app.tools import betting_tool, sports_tool
 
 app = FastAPI()
 

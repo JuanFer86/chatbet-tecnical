@@ -1,10 +1,10 @@
 import httpx
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.models.auth_models import AuthenticateResponse
 from app.core.config import settings
 
 
-async def authenticate_user(userkey: str) -> str | None:
+async def authenticate_user(userkey: str) -> AuthenticateResponse | None:
     """
     Call an external authentication service to validate user.
     """
@@ -16,35 +16,36 @@ async def authenticate_user(userkey: str) -> str | None:
                 params={"userKey": userkey},
             )
 
+            data = valid_user_key.json()
+
             if valid_user_key.status_code != 200:
                 return None
 
             response = await client.post(
                 f"{settings.BASE_URL}/auth/generate_token",
             )
+
             if response.status_code == 200:
-                return response.json().get("token")
+                return_data = {
+                    "token": response.json().get("token"),
+                    "userKey": userkey,
+                    "userId": data.get("userId"),
+                }
+                return return_data
             return None
 
         except httpx.RequestError as e:
             return None
 
 
-security = HTTPBearer()
-
-
-async def verify_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> bool:
-
-    token = credentials.credentials
+def verify_token(token: str) -> bool:
 
     if not token:
         raise HTTPException(status_code=403, detail="token not sent")
 
-    async with httpx.AsyncClient() as client:
+    with httpx.Client() as client:
         try:
-            response = await client.get(
+            response = client.get(
                 f"{settings.BASE_URL}/auth/validate_token",
                 headers={"token": token},
             )
