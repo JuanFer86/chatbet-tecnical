@@ -30,7 +30,7 @@ async def chat_endpoint(
     try:
         # if not user:
         #     return Response(status_code=403, content="Invalid or missing token")
-
+        user = None
         if Authorization and x_user_id and x_user_key:
             user = {
                 "token": Authorization.replace("Bearer", "").strip(),
@@ -42,6 +42,7 @@ async def chat_endpoint(
         conversation.append({"role": "user", "parts": [chat_request.text]})
         reply = generate_response(chat_request.text, conversation, user)
         conversation.append({"role": "model", "parts": [reply]})
+
         return {"response": reply}
 
     except Exception as e:

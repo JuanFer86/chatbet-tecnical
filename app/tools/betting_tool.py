@@ -23,7 +23,6 @@ def place_bet(
     """
     user = verify_token(token)
     body_parse = body.model_dump(by_alias=True)
-    print("ahhh", body_parse)
 
     if user:
         with httpx.Client() as client:
@@ -37,7 +36,6 @@ def place_bet(
                     },
                     json=body_parse,
                 )
-                print("response", response)
                 if response.status_code == 200:
                     return response.json()
                 return None

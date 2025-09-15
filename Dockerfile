@@ -1,15 +1,14 @@
-FROM python:3.13.7
+FROM python:3.13.1
 
 WORKDIR /app
 
-# Actualizar pip
-RUN pip install --upgrade
 
-# Copiar dependencias
 COPY requirements.txt .
+
+RUN pip install --no-cache-dir --upgrade pip
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar app
 COPY . .
 
 EXPOSE 8000

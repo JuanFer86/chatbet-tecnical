@@ -11,6 +11,7 @@ from app.tools.fixtures_tool import get_fixtures, get_sports_fixtures
 from app.tools.betting_tool import place_bet, get_user_balance
 from app.utils.build_messages import build_messages_from_history
 from app.models.auth_models import AuthenticateResponse
+from app.utils.cache import set_cached_tool, get_cached_tool
 from app.core.config import settings
 
 intent_prompt = ChatPromptTemplate.from_messages(
@@ -50,6 +51,17 @@ tools = [
     get_user_balance,
 ]
 
+selected_tool = {
+    "get_available_sports": get_available_sports,
+    "get_available_tournaments": get_available_tournaments,
+    "get_available_all_tournaments": get_available_all_tournaments,
+    "get_fixtures": get_fixtures,
+    "get_sports_fixtures": get_sports_fixtures,
+    "get_odds": get_odds,
+    "place_bet": place_bet,
+    "get_user_balance": get_user_balance,
+}
+
 
 chat_with_tools = chat.bind_tools(tools)
 
@@ -73,39 +85,28 @@ def generate_response(
             intents_chain = intent_prompt | chat_with_tools
             intent_tool_calls = intents_chain.invoke(messages)
 
-            print("intent_tool_calls", intent_tool_calls.tool_calls)
+            # tool_calls_aux = [tool["name"] for tool in intent_tool_calls.tool_calls]
 
-            tool_calls_aux = [tool["name"] for tool in intent_tool_calls.tool_calls]
-
-            if not intent_tool_calls.tool_calls or all(
-                name in tool_calls for name in tool_calls_aux
-            ):
+            if not intent_tool_calls.tool_calls:
                 break
 
             for tool_call in intent_tool_calls.tool_calls:
-                if any(tool != tool_call["name"] for tool in tool_calls):
-                    tool_calls.extend(tool_call["name"])
-                    continue
+                # if any(tool != tool_call["name"] for tool in tool_calls):
+                #     tool_calls.extend(tool_call["name"])
+                #     continue
 
-                selected_tool = {
-                    "get_available_sports": get_available_sports,
-                    "get_available_tournaments": get_available_tournaments,
-                    "get_available_all_tournaments": get_available_all_tournaments,
-                    "get_fixtures": get_fixtures,
-                    "get_sports_fixtures": get_sports_fixtures,
-                    "get_odds": get_odds,
-                    "place_bet": place_bet,
-                    "get_user_balance": get_user_balance,
-                }
+                tool_msg = get_cached_tool(tool_call["name"], tool_call["args"])
 
-                tool = selected_tool[tool_call["name"].lower()]
-                tool_msg = tool.invoke(tool_call)
+                if not tool_msg:
+                    tool = selected_tool[tool_call["name"].lower()]
+                    tool_msg = tool.invoke(tool_call)
+                    set_cached_tool(tool_call["name"], tool_call["args"], tool_msg)
+
                 tool_result_msg = ToolMessage(
                     tool_call_id=tool_call["id"], content=str(tool_msg)
                 )
                 messages.append(tool_result_msg)
 
-        # print(messages)
         chat_chain = main_prompt | chat_with_tools
         response = chat_chain.invoke(messages)
 
