@@ -9,7 +9,7 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
     ORIGINS_CORS: list[str] = [
         "http://localhost:5173",
-        "https://juanfer86.github.io/",
+        "https://juanfer86.github.io",
     ]
     model: str = "gemini-2.5-flash"
     Max_History_Model: int = 12
